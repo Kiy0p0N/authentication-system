@@ -12,11 +12,14 @@ Este é um sistema simples de autenticação construído com Node.js, Express, P
 - **bcrypt** - Hash de senhas
 - **EJS** - Motor de template
 - **body-parser** - Middleware para manipulação de dados de formulários
+- **express-session** - Gerenciamento de sessões
+- **passport.js** - Autenticação de usuários
 
 ## 📂 Funcionalidades
 - Registro de usuário com hash de senha
-- Autenticação de login com bcrypt
+- Autenticação de login com bcrypt e Passport.js
 - Integração com PostgreSQL para armazenamento de usuários
+- Proteção de rotas para acesso autenticado
 
 ## 🔧 Instalação e Execução
 ### Pré-requisitos
@@ -27,8 +30,8 @@ Certifique-se de ter os seguintes itens instalados:
 ### Passos
 1. Clone o repositório:
    ```sh
-   git clone https://github.com/seu-usuario/seu-repo.git
-   cd seu-repo
+   git clone https://github.com/Kiy0p0N/authentication-system.git
+   cd seu-repositório
    ```
 2. Instale as dependências:
    ```sh
@@ -40,7 +43,7 @@ Certifique-se de ter os seguintes itens instalados:
    CREATE TABLE users (
        id SERIAL PRIMARY KEY,
        email VARCHAR(255) UNIQUE NOT NULL,
-       password VARCHAR(255) NOT NULL
+       password TEXT NOT NULL
    );
    ```
 4. Configure as credenciais do banco de dados no código.
