@@ -5,6 +5,7 @@ import bcrypt from 'bcrypt';
 import session from 'express-session';
 import passport from 'passport';
 import { Strategy } from 'passport-local';
+import GoogleStrategy from 'passport-google-oauth2'; 
 import env from 'dotenv';
 
 const app = express();
@@ -70,6 +71,22 @@ app.get("/secrets", (req, res) => {
   }
 });
 
+app.get("/auth/google", passport.authenticate("google", {
+  scope: ["profile", "email"]
+}));
+
+app.get("/auth/google/secrets", passport.authenticate("google", {
+  successRedirect: "/secrets", // Redirects to secrets page if login is successful
+  failureRedirect: "/login", // Redirects to login page if authentication fails
+}));
+
+app.get("/logout", (req, res) => {
+  req.logout((err) => {
+    if (err) console.log(err);
+    res.redirect("/");
+  });
+});
+
 // Handle user registration
 app.post("/register", async (req, res) => {
   const email = req.body.username;
@@ -118,38 +135,67 @@ app.post("/login", passport.authenticate("local", {
 }));
 
 // Configure Passport authentication strategy
-passport.use(new Strategy(async function verify(username, password, cb) {
-  try {
-    // Fetch user from database by email
-    const response = await db.query("SELECT * FROM users WHERE email = $1", [username]);
+passport.use("local", 
+  new Strategy(async function verify(username, password, cb) {
+    try {
+      // Fetch user from database by email
+      const response = await db.query("SELECT * FROM users WHERE email = $1", [username]);
 
-    if (response.rows[0]) {
-      const user = response.rows[0];
-      const storedHashPassword = user.password;
+      if (response.rows[0]) {
+        const user = response.rows[0];
+        const storedHashPassword = user.password;
 
-      // Compare the provided password with the stored hash
-      bcrypt.compare(password, storedHashPassword, (err, result) => {
-        if (err) {
-          console.log("Error comparing passwords: ", err);
-          return cb(err);
-        } else {
-          if (result) {
-            return cb(null, user); // Authentication successful
+        // Compare the provided password with the stored hash
+        bcrypt.compare(password, storedHashPassword, (err, result) => {
+          if (err) {
+            console.log("Error comparing passwords: ", err);
+            return cb(err);
           } else {
-            console.log("Incorrect password");
-            return cb(null, false); // Incorrect password
+            if (result) {
+              return cb(null, user); // Authentication successful
+            } else {
+              console.log("Incorrect password");
+              return cb(null, false); // Incorrect password
+            }
           }
-        }
-      });
-    } else {
-      console.log("User not found");
-      return cb("User not found");
+        });
+      } else {
+        console.log("User not found");
+        return cb("User not found");
+      }
+    } catch (error) {
+      console.error("Database query error: ", error);
+      return cb(error);
     }
-  } catch (error) {
-    console.error("Database query error: ", error);
-    return cb(error);
   }
-}));
+));
+
+passport.use("google", 
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "http://localhost:3000/auth/google/secrets",
+      userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
+    }, 
+    async (accessToken, refreshToken, profile, cb) => {
+      console.log(profile);
+
+      try {
+        const response = await db.query("SELECT * FROM users WHERE email = $1", [profile.email]);
+
+        if (!response.rows[0]) {
+          const newUser = await db.query("INSERT INTO users (email, password) VALUES ($1, $2)", [profile.email, "google"]);
+          cb(null, newUser.rows[0]);
+        } else {
+          cb(null, response.rows[0]);
+        }
+      } catch (error) {
+        cb(error);
+      }
+    }
+  )
+);
 
 // Serialize user information to store in session
 passport.serializeUser((user, cb) => {
