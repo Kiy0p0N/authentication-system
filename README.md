@@ -6,14 +6,15 @@
 Este é um sistema simples de autenticação construído com Node.js, Express, PostgreSQL e bcrypt para hash de senhas. Ele permite que os usuários se registrem e façam login com segurança.
 
 ## 🚀 Tecnologias Utilizadas
-- **Node.js** - Ambiente de execução backend
-- **Express.js** - Framework web para Node.js
-- **PostgreSQL** - Banco de dados relacional
-- **bcrypt** - Hash de senhas
-- **EJS** - Motor de template
-- **body-parser** - Middleware para manipulação de dados de formulários
-- **express-session** - Gerenciamento de sessões
-- **passport.js** - Autenticação de usuários
+- **Node.js** - Ambiente de execução backend;
+- **Express.js** - Framework web para Node.js;
+- **PostgreSQL** - Banco de dados relacional;
+- **bcrypt** - Hash de senhas;
+- **EJS** - Motor de template;
+- **body-parser** - Middleware para manipulação de dados de formulários;
+- **express-session** - Gerenciamento de sessões;
+- **passport.js** - Autenticação de usuários;
+- **dotenv** - Módulo de dependência zero que carrega variáveis ​​de ambiente de um arquivo .env para process.env.
 
 ## 📂 Funcionalidades
 - Registro de usuário com hash de senha

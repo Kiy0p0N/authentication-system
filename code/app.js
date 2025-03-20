@@ -5,43 +5,46 @@ import bcrypt from 'bcrypt';
 import session from 'express-session';
 import passport from 'passport';
 import { Strategy } from 'passport-local';
+import env from 'dotenv';
 
 const app = express();
 const port = 3000;
 const salt = 10;
+env.config(); // Load environment variables from .env file
 
 // Database connection setup
 const db = new pg.Client({
-  user: 'postgres',
-  database: 'secrets',
-  host: 'localhost',
-  password: 'hades',
-  port: '5432'
+  user: process.env.DB_USER, // Database username
+  database: process.env.DB_DATABASE, // Database name
+  host: process.env.DB_HOST, // Database host address
+  password: process.env.DB_PASSWORD, // Database password
+  port: process.env.DB_PORT, // Database port
 });
 
 try {
-  db.connect();
+  db.connect(); // Attempt to connect to the database
   console.log("Connected to database");
 } catch (error) {
   console.error('Database connection error: ', error);
 }
 
 // Middleware setup
-app.use(bodyParser.urlencoded({ extended: true })); // Parses URL-encoded data
+app.use(bodyParser.urlencoded({ extended: true })); // Parses URL-encoded data from forms
 app.use(express.static("public")); // Serves static files from the "public" folder
 
+// Session configuration
 app.use(
   session({
-    secret: "SECRET", // Secret key for session encryption
+    secret: process.env.SESSION_SECRET, // Secret key for session encryption
     resave: false, // Prevents resaving session if nothing changed
     saveUninitialized: true, // Saves uninitialized sessions
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24, // Session expires in 24 hours
+      maxAge: 1000 * 60 * 60 * 24, // Session expires after 24 hours
     }
   })
 );
 
-app.use(passport.initialize()); // Initializes Passport authentication
+app.use(passport.initialize()); // Initializes Passport authentication middleware
 app.use(passport.session()); // Enables persistent login sessions
 
 // Route handlers
@@ -63,7 +66,7 @@ app.get("/secrets", (req, res) => {
   if (req.isAuthenticated()) { // Checks if user is logged in
     res.render("secrets.ejs"); // Renders the secrets page
   } else {
-    res.redirect("/login"); // Redirects to login if not authenticated
+    res.redirect("/login"); // Redirects to login page if not authenticated
   }
 });
 
@@ -90,7 +93,8 @@ app.post("/register", async (req, res) => {
             // Store new user in the database
             const result = await db.query("INSERT INTO users(email, password) VALUES ($1, $2) RETURNING *", [email, hash]);
             const user = result.rows[0];
-            req.login(user, (err) => { // Logs in the new user automatically
+            
+            req.login(user, (err) => { // Logs in the new user automatically after registration
               console.log(err);
               res.redirect("/secrets");
             });
@@ -107,12 +111,13 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// Handle user login
+// Handle user login using Passport authentication
 app.post("/login", passport.authenticate("local", {
   successRedirect: "/secrets", // Redirects to secrets page if login is successful
   failureRedirect: "/login", // Redirects to login page if authentication fails
 }));
 
+// Configure Passport authentication strategy
 passport.use(new Strategy(async function verify(username, password, cb) {
   try {
     // Fetch user from database by email
@@ -146,12 +151,14 @@ passport.use(new Strategy(async function verify(username, password, cb) {
   }
 }));
 
+// Serialize user information to store in session
 passport.serializeUser((user, cb) => {
-  cb(null, user); // Stores user info in session
+  cb(null, user);
 });
 
+// Deserialize user information when retrieving from session
 passport.deserializeUser((user, cb) => {
-  cb(null, user); // Retrieves user info from session
+  cb(null, user);
 });
 
 // Start the server
