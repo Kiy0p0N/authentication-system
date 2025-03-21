@@ -49,7 +49,18 @@ app.use(passport.initialize()); // Initializes Passport authentication middlewar
 app.use(passport.session()); // Enables persistent login sessions
 
 // Route handlers
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
+  try {
+    // Retrieve all secrets from the database
+    const response = await db.query("SELECT secret FROM users");
+    
+    res.render("secrets.ejs", { secrets: response.rows }); // Renders the secrets page with retrieved data
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.get("/home", (req, res) => {
   res.render("home.ejs"); // Renders the home page
 });
 
@@ -61,30 +72,29 @@ app.get("/register", (req, res) => {
   res.render("register.ejs"); // Renders the registration page
 });
 
-app.get("/secrets", (req, res) => {
-  console.log(req.user);
-
-  if (req.isAuthenticated()) { // Checks if user is logged in
-    res.render("secrets.ejs"); // Renders the secrets page
-  } else {
-    res.redirect("/login"); // Redirects to login page if not authenticated
-  }
-});
-
+// Google authentication routes
 app.get("/auth/google", passport.authenticate("google", {
-  scope: ["profile", "email"]
+  scope: ["profile", "email"] // Requests user profile and email from Google
 }));
 
 app.get("/auth/google/secrets", passport.authenticate("google", {
-  successRedirect: "/secrets", // Redirects to secrets page if login is successful
+  successRedirect: "/submit", // Redirects to submit page if login is successful
   failureRedirect: "/login", // Redirects to login page if authentication fails
 }));
 
 app.get("/logout", (req, res) => {
   req.logout((err) => {
     if (err) console.log(err);
-    res.redirect("/");
+    res.redirect("/"); // Redirects to home page after logout
   });
+});
+
+app.get("/submit", (req, res) => {
+  if (req.user) {
+    res.render("submit.ejs"); // Allows authenticated users to submit secrets
+  } else {
+    res.redirect("/home"); // Redirects non-authenticated users to home page
+  }
 });
 
 // Handle user registration
@@ -112,8 +122,8 @@ app.post("/register", async (req, res) => {
             const user = result.rows[0];
             
             req.login(user, (err) => { // Logs in the new user automatically after registration
-              console.log(err);
-              res.redirect("/secrets");
+              if (err) console.log(err);
+              res.redirect("/submit");
             });
           } catch (error) {
             console.log("Error registering user: ", error);
@@ -130,11 +140,26 @@ app.post("/register", async (req, res) => {
 
 // Handle user login using Passport authentication
 app.post("/login", passport.authenticate("local", {
-  successRedirect: "/secrets", // Redirects to secrets page if login is successful
+  successRedirect: "/submit", // Redirects to submit page if login is successful
   failureRedirect: "/login", // Redirects to login page if authentication fails
 }));
 
-// Configure Passport authentication strategy
+// Handle secret submission
+app.post("/submit", async (req, res) => {
+  const user = req.user;
+  const secret = req.body.secret;
+
+  try {
+    // Store submitted secret in the database
+    await db.query("UPDATE users SET secret = $1 WHERE email = $2", [secret, user.email]);
+    res.redirect("/"); // Redirect to home after successful submission
+  } catch (error) {
+    console.error(error);
+    res.redirect("/submit");
+  }
+});
+
+// Configure Passport authentication strategy for local login
 passport.use("local", 
   new Strategy(async function verify(username, password, cb) {
     try {
@@ -170,6 +195,7 @@ passport.use("local",
   }
 ));
 
+// Configure Passport authentication strategy for Google login
 passport.use("google", 
   new GoogleStrategy(
     {
@@ -182,9 +208,11 @@ passport.use("google",
       console.log(profile);
 
       try {
+        // Check if user already exists in database
         const response = await db.query("SELECT * FROM users WHERE email = $1", [profile.email]);
 
         if (!response.rows[0]) {
+          // Register new user if they don't exist
           const newUser = await db.query("INSERT INTO users (email, password) VALUES ($1, $2)", [profile.email, "google"]);
           cb(null, newUser.rows[0]);
         } else {

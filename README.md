@@ -1,26 +1,30 @@
-# Sistema de Autenticação com Express e PostgreSQL
+# Sistema de Autenticação com Express e PostgreSQL  
 
-![Exemplo de execução](/image/example.gif)
+![Exemplo de execução](/image/example.gif)  
 
-## 📌 Descrição do Projeto
-Este é um sistema simples de autenticação construído com Node.js, Express, PostgreSQL e bcrypt para hash de senhas. Ele permite que os usuários se registrem e façam login com segurança.
+## 📌 Descrição do Projeto  
+Este é um sistema completo de autenticação de usuários construído com Node.js, Express e PostgreSQL. Ele permite que os usuários se registrem, façam login com credenciais locais (e-mail e senha) ou utilizem autenticação via Google OAuth.  
 
-## 🚀 Tecnologias Utilizadas
-- **Node.js** - Ambiente de execução backend;
-- **Express.js** - Framework web para Node.js;
-- **PostgreSQL** - Banco de dados relacional;
-- **bcrypt** - Hash de senhas;
-- **EJS** - Motor de template;
-- **body-parser** - Middleware para manipulação de dados de formulários;
-- **express-session** - Gerenciamento de sessões;
-- **passport.js** - Autenticação de usuários;
-- **dotenv** - Módulo de dependência zero que carrega variáveis ​​de ambiente de um arquivo .env para process.env.
+## 🚀 Tecnologias Utilizadas  
+- **Node.js** - Ambiente de execução backend  
+- **Express.js** - Framework web para Node.js  
+- **PostgreSQL** - Banco de dados relacional  
+- **bcrypt** - Hash e verificação de senhas  
+- **EJS** - Motor de template para renderizar páginas dinâmicas  
+- **body-parser** - Middleware para manipulação de dados de formulários  
+- **express-session** - Gerenciamento de sessões de usuário  
+- **passport.js** - Middleware de autenticação  
+- **passport-local** - Estratégia de autenticação com e-mail e senha  
+- **passport-google-oauth2** - Estratégia de autenticação via Google OAuth  
+- **dotenv** - Gerenciamento de variáveis de ambiente  
 
-## 📂 Funcionalidades
-- Registro de usuário com hash de senha
-- Autenticação de login com bcrypt e Passport.js
-- Integração com PostgreSQL para armazenamento de usuários
-- Proteção de rotas para acesso autenticado
+## 📂 Funcionalidades  
+✔ Registro de usuário com hash de senha seguro (bcrypt)  
+✔ Login de usuário com autenticação local via Passport.js  
+✔ Login via Google OAuth2  
+✔ Persistência de sessão para usuários autenticados  
+✔ Proteção de rotas para impedir acesso não autorizado  
+✔ Armazenamento seguro de segredos no banco de dados 
 
 ## 🔧 Instalação e Execução
 ### Pré-requisitos
@@ -44,7 +48,8 @@ Certifique-se de ter os seguintes itens instalados:
    CREATE TABLE users (
        id SERIAL PRIMARY KEY,
        email VARCHAR(255) UNIQUE NOT NULL,
-       password TEXT NOT NULL
+       password TEXT NOT NULL,
+       secret TEXT
    );
    ```
 4. Configure as credenciais do banco de dados no código.
